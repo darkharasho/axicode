@@ -1,0 +1,22 @@
+{
+  "name": "axicode",
+  "version": "1.0.0",
+  "description": "Compact binary build code encoder/decoder for Guild Wars 2 builds (AxiCode format)",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "guild-wars-2",
+    "gw2",
+    "build-code",
+    "encoder",
+    "decoder",
+    "axiforge"
+  ],
+  "author": "darkharasho",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
