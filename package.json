@@ -18,5 +18,8 @@
   "license": "MIT",
   "devDependencies": {
     "jest": "^29.7.0"
+  },
+  "dependencies": {
+    "pako": "^2.1.0"
   }
 }
