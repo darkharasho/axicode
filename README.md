@@ -1,6 +1,10 @@
 # @mks.haro/axicode
 
-Compact binary build code encoder/decoder for Guild Wars 2 builds. Produces shareable build strings in the **AxiCode** format used by [AxiForge](https://axiforge.com).
+Compact binary encoder/decoder for Guild Wars 2 builds and team compositions. Produces shareable strings in the **AxiCode** format used by [AxiForge](https://axiforge.com).
+
+Supports two code types:
+- **Build codes** — a single character build: `<AxiForge:Berserker:5p<)jKY1/i5qHKz...>`
+- **Comp codes** — a full team composition with multiple builds and party lines: `<AxiForge:Comp:eJyrVipTsjLUUcpT...>`
 
 ## Installation
 
@@ -11,7 +15,10 @@ npm install @mks.haro/axicode
 ## Usage
 
 ```js
-const { encodeShareCode, decodeShareCode, isValidShareCode } = require("@mks.haro/axicode");
+const {
+  encodeShareCode, decodeShareCode, isValidShareCode,
+  encodeCompCode, decodeCompCode, isValidCompCode,
+} = require("@mks.haro/axicode");
 ```
 
 ### Encoding a build
@@ -117,7 +124,82 @@ Decodes an AxiCode share string back into a build object. Throws if the format i
 
 ### `isValidShareCode(text) → boolean`
 
-Returns `true` if the string matches the AxiCode wrapper format.
+Returns `true` if the string matches the AxiCode build code wrapper format.
+
+---
+
+### Encoding a comp
+
+Pass a comp object and a map of builds to `encodeCompCode`:
+
+```js
+const compCode = encodeCompCode(
+  {
+    name: "Raid Squad",
+    gameMode: "pve",
+    partyLines: [
+      { id: "p1", capacity: 5, slots: ["warrior1", "warrior1", "warrior1", "warrior1", "warrior1"] },
+      { id: "p2", capacity: 5, slots: ["warrior1", "warrior1", "warrior1", "warrior1", "warrior1"] },
+    ],
+  },
+  { warrior1: warriorBuild },
+);
+
+console.log(compCode);
+// => "<AxiForge:Comp:eJyrVipTsjLUUcpTslIKSsxMUQguLE1MUdJRSgcKFJSlAllJSlbRSqYFNppZ3pGG-pmmhR7eVe5BpbkZaubhQXHuTnbVsWWZcV6lauXmFdllRj5mtkqxOkoFQF3VSslKVqY6SsVAtoEOFMbW6uAQj60FAD-KJ1g>"
+```
+
+Builds are deduplicated — identical builds used in multiple slots are stored only once.
+
+### Decoding a comp
+
+```js
+const comp = decodeCompCode("<AxiForge:Comp:eJyrVipTsjLUUcpT...>");
+
+console.log(comp.name);       // "Raid Squad"
+console.log(comp.gameMode);   // "pve"
+console.log(comp.builds);     // Array of decoded build objects (deduplicated)
+console.log(comp.partyLines); // [{ capacity: 5, slots: [build, build, ...] }, ...]
+```
+
+### Validating a comp code
+
+```js
+isValidCompCode("<AxiForge:Comp:eJyrVipTsjLU...>"); // true
+isValidCompCode("<AxiForge:Berserker:abc123>");      // false (build code, not comp)
+isValidCompCode("not a comp code");                  // false
+```
+
+### `encodeCompCode(comp, builds) → string | null`
+
+Encodes a team composition into a comp code string. Returns `null` if any referenced build is missing from the builds map or fails to encode.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `comp.name` | `string` | Comp name (max 140 characters) |
+| `comp.gameMode` | `string \| null` | `"pve"`, `"wvw"`, or `null` |
+| `comp.partyLines` | `array` | Party lines, each with `capacity` (number) and `slots` (array of build IDs) |
+| `builds` | `object` | Map of build ID → build object (same shape as `encodeShareCode` input) |
+
+### `decodeCompCode(code) → object | null`
+
+Decodes a comp code string back into a comp object. Returns `null` if the format is invalid or the payload is corrupted.
+
+**Returned object shape:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `string` | Comp name |
+| `gameMode` | `string \| null` | `"pve"`, `"wvw"`, or `null` |
+| `builds` | `array` | Deduplicated array of decoded build objects |
+| `partyLines` | `array` | Party lines, each with `capacity` (number) and `slots` (array of build objects) |
+| `failedBuildCount` | `number` | Number of builds that failed to decode (0 if all succeeded) |
+
+### `isValidCompCode(text) → boolean`
+
+Returns `true` if the string matches the `<AxiForge:Comp:...>` wrapper format.
 
 ## Supported Values
 
@@ -131,7 +213,9 @@ Returns `true` if the string matches the AxiCode wrapper format.
 
 ## Format Details
 
-AxiCode uses a compact binary encoding with bit-level packing and [Z85](https://rfc.zeromq.org/spec/32/) encoding for the text payload. The format uses flags to conditionally include optional sections (offhands, second weapon set, underwater, profession-specific data, per-slot runes/infusions), keeping simple builds small while supporting full equipment detail.
+**Build codes** use compact binary encoding with bit-level packing and [Z85](https://rfc.zeromq.org/spec/32/) encoding for the text payload. The format is `<AxiForge:{label}:{payload}>`, where the label is the elite specialization name (or profession name for core builds). Flags conditionally include optional sections (offhands, second weapon set, underwater, profession-specific data, per-slot runes/infusions), keeping simple builds small while supporting full equipment detail.
+
+**Comp codes** use the format `<AxiForge:Comp:{payload}>`. The payload is a JSON schema (containing the comp name, game mode, party layout, and embedded build payloads) compressed with [pako](https://github.com/nicmart/pako) (deflate) and encoded as base64url. Identical builds are deduplicated by payload to minimize size.
 
 ## License
 
