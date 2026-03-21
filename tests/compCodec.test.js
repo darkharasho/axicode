@@ -4,6 +4,8 @@ const {
   decodeCompCode,
   encodeShareCode,
 } = require("../src/index");
+const pako = require("pako");
+const { base64urlEncode, base64urlDecode } = require("../src/base64url");
 
 describe("isValidCompCode", () => {
   test("returns true for valid comp code format", () => {
@@ -202,6 +204,34 @@ describe("decodeCompCode", () => {
     const code = encodeCompCode(comp, {});
     const decoded = decodeCompCode(code);
     expect(decoded.partyLines[0].capacity).toBe(50);
+  });
+
+  test("failedBuildCount reflects builds that fail to decode", () => {
+    const comp = {
+      name: "Corrupt Test",
+      gameMode: "pve",
+      partyLines: [{ id: "line1", capacity: 5, slots: ["b1"] }],
+      buildIds: ["b1"],
+    };
+    const builds = { b1: mockBuild };
+
+    // Encode a valid comp code, then tamper with one build payload
+    const code = encodeCompCode(comp, builds);
+    const b64 = code.slice("<AxiForge:Comp:".length, -1);
+    const compressed = base64urlDecode(b64);
+    const schema = JSON.parse(new TextDecoder().decode(pako.inflate(compressed)));
+
+    // Replace the first build payload with garbage that won't decode
+    schema.b[0] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+    const tamperedB64 = base64urlEncode(pako.deflate(JSON.stringify(schema)));
+    const tamperedCode = `<AxiForge:Comp:${tamperedB64}>`;
+
+    const decoded = decodeCompCode(tamperedCode);
+
+    expect(decoded).not.toBeNull();
+    expect(decoded.failedBuildCount).toBe(1);
+    expect(decoded.builds).toHaveLength(0);
   });
 });
 
