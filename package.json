@@ -1,6 +1,6 @@
 {
   "name": "@mks.haro/axicode",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Compact binary build code encoder/decoder for Guild Wars 2 builds (AxiCode format)",
   "main": "src/index.js",
   "scripts": {
