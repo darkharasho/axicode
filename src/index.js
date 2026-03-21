@@ -607,3 +607,9 @@ function isValidShareCode(text) {
 }
 
 module.exports = { encodeShareCode, decodeShareCode, isValidShareCode };
+
+// Comp codec — loaded after build codec exports are set (avoids circular require)
+const { isValidCompCode, encodeCompCode, decodeCompCode } = require("./compCodec");
+module.exports.isValidCompCode = isValidCompCode;
+module.exports.encodeCompCode = encodeCompCode;
+module.exports.decodeCompCode = decodeCompCode;
