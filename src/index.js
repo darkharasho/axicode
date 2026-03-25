@@ -613,3 +613,9 @@ const { isValidCompCode, encodeCompCode, decodeCompCode } = require("./compCodec
 module.exports.isValidCompCode = isValidCompCode;
 module.exports.encodeCompCode = encodeCompCode;
 module.exports.decodeCompCode = decodeCompCode;
+
+// File codec — bulk .axicode file encode/decode
+const { encodeAxicodeFile, decodeAxicodeFile, isValidAxicodeFile } = require("./fileCodec");
+module.exports.encodeAxicodeFile = encodeAxicodeFile;
+module.exports.decodeAxicodeFile = decodeAxicodeFile;
+module.exports.isValidAxicodeFile = isValidAxicodeFile;
